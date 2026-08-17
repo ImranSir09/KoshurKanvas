@@ -17,6 +17,10 @@ import {
   applyStyleToRange,
   clearFormattingInRange,
   shiftSpansOnTextChange,
+  transformSpansAfterEdit,
+  normalizeSelection,
+  transformRangeAfterEdit,
+  normalizeSpans,
   getEffectiveStyleAtRange
 } from '../lib/textEngine';
 import { DEFAULT_TEXT_STYLE } from '../lib/kashmiriData';
@@ -173,11 +177,14 @@ export const KashmiriEditor: React.FC<KashmiriEditorProps> = ({
     }
   }, [onUpdateDocument]);
 
-  // Arbitrary Native Selection Tracking
+  // Arbitrary Native Selection Tracking with Grapheme Normalization
   const updateSelectionFromDOM = useCallback(() => {
     if (!textareaRef.current) return;
-    const start = textareaRef.current.selectionStart ?? 0;
-    const end = textareaRef.current.selectionEnd ?? 0;
+    const rawStart = textareaRef.current.selectionStart ?? 0;
+    const rawEnd = textareaRef.current.selectionEnd ?? 0;
+    const normalized = normalizeSelection(doc.content, rawStart, rawEnd);
+    const start = normalized.start;
+    const end = normalized.end;
 
     setCursorPos(start);
 
@@ -350,7 +357,7 @@ export const KashmiriEditor: React.FC<KashmiriEditorProps> = ({
       const newContent = before + textToInsert + after;
 
       const deltaLength = textToInsert.length - (insertEnd - insertStart);
-      const updatedSpans = shiftSpansOnTextChange(doc.spans || [], insertStart, deltaLength);
+      const updatedSpans = transformSpansAfterEdit(doc.spans || [], insertStart, deltaLength);
 
       const newPos = insertStart + textToInsert.length;
       setCursorPos(newPos);
@@ -424,7 +431,7 @@ export const KashmiriEditor: React.FC<KashmiriEditorProps> = ({
       const after = doc.content.slice(activeEnd);
       const newContent = before + after;
       const deltaLength = -(activeEnd - activeStart);
-      const updatedSpans = shiftSpansOnTextChange(doc.spans || [], activeStart, deltaLength);
+      const updatedSpans = transformSpansAfterEdit(doc.spans || [], activeStart, deltaLength);
 
       setCursorPos(activeStart);
       setSelection({ start: activeStart, end: activeStart, text: '' });
@@ -447,7 +454,7 @@ export const KashmiriEditor: React.FC<KashmiriEditorProps> = ({
       const before = doc.content.slice(0, deletePos);
       const after = doc.content.slice(activeStart);
       const newContent = before + after;
-      const updatedSpans = shiftSpansOnTextChange(doc.spans || [], deletePos, -1);
+      const updatedSpans = transformSpansAfterEdit(doc.spans || [], deletePos, -1);
 
       setCursorPos(deletePos);
       setSelection({ start: deletePos, end: deletePos, text: '' });
