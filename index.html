@@ -8,6 +8,27 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Gulzar&family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&family=Amiri:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script type="text/javascript">
+      // Single Page Apps for GitHub Pages redirection support
+      (function(l) {
+        if (l.search[1] === '/' ) {
+          var decoded = l.search.slice(1).split('&').map(function(s) { 
+            return s.replace(/~and~/g, '&')
+          }).reduce(function(acc, s) {
+            var p = s.split('=');
+            acc[p[0]] = decodeURIComponent(p[1]);
+            return acc;
+          }, {});
+          if (decoded['p'] !== undefined) {
+            window.history.replaceState(null, null,
+              l.pathname.slice(0, -1) + decoded['p'] +
+              (decoded['q'] ? '?' + decoded['q'] : '') +
+              l.hash
+            );
+          }
+        }
+      }(window.location));
+    </script>
   </head>
   <body class="bg-white text-stone-900 antialiased overflow-x-hidden selection:bg-emerald-500/20 selection:text-emerald-900">
     <div id="root"></div>
