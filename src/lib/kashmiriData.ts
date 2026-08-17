@@ -396,23 +396,23 @@ export const KASHMIRI_CHARACTERS_DB: KashmiriCharInfo[] = [
 
 // Dedicated Keyboard Layouts - Clean, non-duplicated Kashmiri & Perso-Arabic layout
 export const KASHMIRI_KEYBOARD_LAYOUTS = {
-  // Main letters (Layout 1 - حروف) - Clean, zero-duplication standard & Kashmiri letters
+  // Main letters (Layout 1 - حروف) - Clean, zero-duplication standard & Kashmiri letters prioritized
   main: [
-    // Row 1: Kashmiri vowels & top consonants (11 keys)
+    // Row 1: Kashmiri vowels & top special consonants
     [
       { char: 'ٲ', isKashmiriSpecial: true, longPress: ['ٳ', 'آ', 'أ', 'إ'] },
       { char: 'ۄ', isKashmiriSpecial: true, longPress: ['ۄٚ', 'ۆ', 'و', 'ؤ'] },
       { char: 'ؠ', isKashmiriSpecial: true, longPress: ['ی', 'ے', 'ےٚ', 'ێ'] },
-      { char: 'ق' },
-      { char: 'ف', longPress: ['ڤ'] },
-      { char: 'غ' },
-      { char: 'ع', longPress: ['ء'] },
-      { char: 'ہ', longPress: ['پھ', 'تھ', 'ٹھ', 'چھ', 'جھ', 'بھ', 'دھ', 'ڈھ', 'کھ', 'گھ', 'ھ', 'ۂ', 'ۃ'] },
-      { char: 'خ' },
-      { char: 'ح' },
-      { char: 'ج' },
+      { char: 'ژ', isKashmiriSpecial: true },
+      { char: 'چ' },
+      { char: 'پ' },
+      { char: 'ٹ', longPress: ['ط'] },
+      { char: 'ڈ' },
+      { char: 'ڑ', longPress: ['ر'] },
+      { char: 'ں', longPress: ['ن'] },
+      { char: 'ھ', longPress: ['پھ', 'تھ', 'ٹھ', 'چھ', 'جھ', 'بھ', 'دھ', 'ڈھ', 'کھ', 'گھ'] },
     ],
-    // Row 2: Home row consonants (11 keys)
+    // Row 2: Home row core consonants
     [
       { char: 'ش' },
       { char: 'س', longPress: ['ص', 'ث'] },
@@ -420,25 +420,25 @@ export const KASHMIRI_KEYBOARD_LAYOUTS = {
       { char: 'ب' },
       { char: 'ل', longPress: ['لا', 'لٲ'] },
       { char: 'ا', longPress: ['آ', 'ٲ', 'ٳ', 'أ', 'إ', 'ٱ'] },
-      { char: 'ت', longPress: ['ط', 'ۃ'] },
-      { char: 'ن', longPress: ['ں', 'ݨ'] },
+      { char: 'ت', longPress: ['ۃ'] },
+      { char: 'ن', longPress: ['ݨ', 'ں'] },
       { char: 'م' },
       { char: 'ک' },
       { char: 'گ' },
     ],
-    // Row 3: Bottom row with Kashmiri specials (11 keys)
+    // Row 3: Bottom row letters
     [
-      { char: 'ژ', isKashmiriSpecial: true },
-      { char: 'چ' },
-      { char: 'پ' },
-      { char: 'ٹ' },
-      { char: 'ث' },
+      { char: 'ف', longPress: ['ڤ', 'ق'] },
+      { char: 'غ', longPress: ['ع'] },
+      { char: 'ح', longPress: ['خ'] },
+      { char: 'ج' },
       { char: 'د', longPress: ['ذ'] },
-      { char: 'ڈ' },
       { char: 'ر', longPress: ['ڑ'] },
-      { char: 'ڑ' },
       { char: 'ز', longPress: ['ض', 'ظ'] },
       { char: 'و', longPress: ['ۄ', 'ۆ', 'ۄٚ', 'ؤ', 'ۇ'] },
+      { char: 'ه', longPress: ['ہ', 'ۂ', 'ۃ'] },
+      { char: 'ع', longPress: ['ء'] },
+      { char: 'ق', longPress: ['ف'] },
     ],
   ],
 
