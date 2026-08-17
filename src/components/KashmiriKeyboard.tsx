@@ -168,7 +168,7 @@ export const KashmiriKeyboard: React.FC<KashmiriKeyboardProps> = ({
   return (
     <div
       id="kashmiri-virtual-keyboard"
-      className="w-full bg-white border-t border-stone-200 select-none transition-colors z-40 touch-none flex flex-col shadow-lg"
+      className="w-full bg-white border-t border-stone-200 select-none transition-colors z-40 touch-none flex flex-col shadow-lg pb-[env(safe-area-inset-bottom)]"
     >
       {/* Long Press Popup Floating Modal */}
       {longPressActiveKey && (
