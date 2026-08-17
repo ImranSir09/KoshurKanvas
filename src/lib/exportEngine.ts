@@ -345,14 +345,14 @@ export async function shareCanvasImage(
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
         title: title || 'کٲشُر لیٚکھُن سٹوڈیو',
-        text: 'Created with Kashur Lekhun Studio',
+        text: 'Created with Koshur Kanvas',
         files: [file],
       });
       return true;
     } else if (navigator.share) {
       await navigator.share({
         title: title || 'کٲشُر لیٚکھُن سٹوڈیو',
-        text: 'Created with Kashur Lekhun Studio',
+        text: 'Created with Koshur Kanvas',
         url: window.location.href,
       });
       return true;
