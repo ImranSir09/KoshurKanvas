@@ -1,0 +1,6 @@
+{
+  "name": "Kashur Lekhun Studio",
+  "description": "A modern, mobile-first Kashmiri Unicode writing and calligraphy editor with virtual Nastaliq keyboard, phone keyboard toggle, inline rich formatting, Kashmiri glyph library, and multi-format writing export (PNG, PDF, SVG, TXT, DOC).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
