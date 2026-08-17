@@ -29,9 +29,38 @@ export default function App() {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [isFocusedWritingMode, setIsFocusedWritingMode] = useState<boolean>(true);
 
-  // Enforce pure white light mode independently of device OS/phone theme
+  // Enforce pure white light mode independently of device OS/phone theme and strictly prevent zooming
   useEffect(() => {
     document.documentElement.classList.remove('dark');
+
+    // Prevent pinch zoom, gesture zoom, and ctrl+wheel zoom
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+      }
+    };
+
+    const handleGestureStart = (e: Event) => {
+      e.preventDefault();
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    document.addEventListener('gesturestart', handleGestureStart);
+    document.addEventListener('gesturechange', handleGestureStart);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+      document.removeEventListener('gesturestart', handleGestureStart);
+      document.removeEventListener('gesturechange', handleGestureStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+    };
   }, []);
 
   // Load IndexedDB documents on mount
@@ -102,7 +131,8 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-white text-stone-900 overflow-hidden font-sans relative selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="bg-stone-950 h-screen w-screen flex items-center justify-center overflow-hidden touch-none sm:touch-auto">
+      <div className="w-full h-full sm:max-w-[430px] sm:h-[92vh] sm:max-h-[920px] sm:rounded-[36px] sm:border-[10px] sm:border-stone-800 sm:shadow-2xl bg-white text-stone-900 overflow-hidden font-sans relative flex flex-col selection:bg-emerald-100 selection:text-emerald-900">
       {/* Top Application Header */}
       <Header
         currentDocTitle={currentDoc.title}
@@ -153,6 +183,7 @@ export default function App() {
         onNewDocument={handleNewDocument}
         onDeleteDocument={handleDeleteDocument}
       />
+      </div>
     </div>
   );
 }
