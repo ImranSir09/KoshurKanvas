@@ -1,0 +1,17 @@
+{
+  "name": "Koshur Kanvas - Kashmiri Unicode Writing Studio",
+  "short_name": "KoshurKanvas",
+  "description": "Modern Kashmiri Unicode writing and calligraphy editor with virtual Nastaliq keyboard, rich formatting, and multi-format export.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#064e3b",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
