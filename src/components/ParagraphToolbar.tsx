@@ -8,23 +8,71 @@ import {
   Quote,
   Outdent,
   Indent,
+  Heading1,
+  Heading2,
+  Type,
 } from 'lucide-react';
 import { ParagraphFormat } from '../types';
 
 interface ParagraphToolbarProps {
   currentFormat: ParagraphFormat;
   onApplyFormat: (updates: Partial<ParagraphFormat>) => void;
+  onApplyPreset?: (preset: 'title' | 'heading' | 'subheading' | 'body') => void;
 }
 
 export const ParagraphToolbar: React.FC<ParagraphToolbarProps> = ({
   currentFormat,
   onApplyFormat,
+  onApplyPreset,
 }) => {
   return (
     <div
-      className="flex items-center gap-1 bg-white border border-stone-200 rounded-lg p-1 shadow-2xs overflow-x-auto custom-scrollbar shrink-0 max-w-full"
+      className="flex items-center gap-1.5 bg-white border border-stone-200 rounded-lg p-1 shadow-2xs overflow-x-auto overflow-y-hidden whitespace-nowrap scroll-smooth [-webkit-overflow-scrolling:touch] custom-scrollbar shrink-0"
       dir="ltr"
     >
+      {/* Quick Paragraph Heading Presets */}
+      {onApplyPreset && (
+        <div className="flex items-center gap-1 bg-stone-50 border border-stone-200 rounded-md p-0.5 shrink-0" dir="rtl">
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onApplyPreset('title')}
+            className="h-7 px-2 rounded text-xs font-nastaliq text-stone-800 hover:bg-emerald-50 hover:text-emerald-800 transition-colors cursor-pointer"
+            title="Title Preset (عنوان)"
+          >
+            عنوان
+          </button>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onApplyPreset('heading')}
+            className="h-7 px-2 rounded text-xs font-nastaliq text-stone-800 hover:bg-emerald-50 hover:text-emerald-800 transition-colors cursor-pointer"
+            title="Heading Preset (سرخی)"
+          >
+            سرخی
+          </button>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onApplyPreset('subheading')}
+            className="h-7 px-2 rounded text-xs font-nastaliq text-stone-800 hover:bg-emerald-50 hover:text-emerald-800 transition-colors cursor-pointer"
+            title="Subheading Preset (ذیلی سرخی)"
+          >
+            ذیلی
+          </button>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onApplyPreset('body')}
+            className="h-7 px-2 rounded text-xs font-nastaliq text-stone-800 hover:bg-emerald-50 hover:text-emerald-800 transition-colors cursor-pointer"
+            title="Body Preset (متن)"
+          >
+            متن
+          </button>
+          <div className="w-px h-4 bg-stone-200 mx-0.5" />
+        </div>
+      )}
+
       {/* 1. RTL Text Direction */}
       <button
         type="button"

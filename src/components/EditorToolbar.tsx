@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Bold,
   Italic,
@@ -9,11 +9,16 @@ import {
   AlignJustify,
   ArrowUpToLine,
   ArrowDownToLine,
+  Type,
   Palette,
   Highlighter,
+  Sliders,
   RotateCcw,
-  WrapText,
   Check,
+  ChevronDown,
+  WrapText,
+  Undo2,
+  Redo2,
 } from 'lucide-react';
 import { FontChoice, TextStyleProperties } from '../types';
 
@@ -24,6 +29,10 @@ interface EditorToolbarProps {
   onInsertLineBreak?: () => void;
   selectionCount?: number;
   isSelectionActive?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
 }
 
 export const EditorToolbar: React.FC<EditorToolbarProps> = ({
@@ -33,12 +42,20 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onInsertLineBreak,
   selectionCount = 0,
   isSelectionActive = false,
+  onUndo,
+  onRedo,
+  canUndo = true,
+  canRedo = true,
 }) => {
-  const fonts: { id: FontChoice; nameKashmiri: string }[] = [
-    { id: 'Noto Nastaliq Urdu', nameKashmiri: 'نستعلیق' },
-    { id: 'Gulzar', nameKashmiri: 'گُلزار' },
-    { id: 'Amiri', nameKashmiri: 'امیری' },
-    { id: 'Noto Sans Arabic', nameKashmiri: 'عربک' },
+  const [openPicker, setOpenPicker] = useState<
+    'none' | 'font' | 'color' | 'highlight' | 'spacing' | 'fx' | 'canvas'
+  >('none');
+
+  const fonts: { id: FontChoice; name: string; nameKashmiri: string }[] = [
+    { id: 'Noto Nastaliq Urdu', name: 'Noto Nastaliq Urdu (Default)', nameKashmiri: 'نوٹو نستعلیق (Primary)' },
+    { id: 'Gulzar', name: 'Gulzar Nastaliq', nameKashmiri: 'گُلزار نستعلیق' },
+    { id: 'Amiri', name: 'Amiri Naskh', nameKashmiri: 'امیری نسخ' },
+    { id: 'Noto Sans Arabic', name: 'Noto Sans Arabic', nameKashmiri: 'نوٹو سنز عربک' },
   ];
 
   const quickColors = [
@@ -48,7 +65,9 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
     '#047857', // emerald-700
     '#1d4ed8', // blue-700
     '#6d28d9', // purple-700
+    '#d97706', // amber-500
     '#f59e0b', // amber-400
+    '#fafaf9', // stone-50
   ];
 
   const quickHighlights = [
@@ -56,44 +75,76 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
     '#fef3c7', // amber-100
     '#fee2e2', // red-100
     '#dcfce7', // emerald-100
+    '#e0e7ff', // indigo-100
     '#fef08a', // yellow-200
   ];
 
   return (
     <div
       id="editor-formatting-toolbar"
-      className="w-full bg-white border-t border-b border-stone-200 px-3 py-2 z-30"
-      dir="rtl"
+      className="w-full bg-white border-t border-b border-stone-200 px-3 py-2 flex flex-col z-30 transition-colors"
     >
-      {/* Single Horizontal Scrolling Line Containing All Formatting Tools */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 whitespace-nowrap select-none">
-        {/* Selection Status Badge */}
+      {/* Horizontally Scrollable Main Bar */}
+      <div className="flex items-center gap-2 overflow-x-auto overflow-y-hidden whitespace-nowrap scroll-smooth [-webkit-overflow-scrolling:touch] custom-scrollbar py-0.5" dir="rtl">
+        {/* Undo / Redo Action Buttons */}
+        {(onUndo || onRedo) && (
+          <div className="flex items-center gap-0.5 bg-white border border-stone-200 rounded-lg p-0.5 shrink-0">
+            <button
+              id="toolbar-undo-btn"
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onUndo}
+              disabled={!canUndo}
+              className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer ${
+                canUndo ? 'text-stone-700 hover:bg-emerald-50 hover:text-emerald-800' : 'text-stone-300 cursor-not-allowed'
+              }`}
+              title="Undo (اُن ڈو)"
+            >
+              <Undo2 size={14} />
+            </button>
+            <button
+              id="toolbar-redo-btn"
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onRedo}
+              disabled={!canRedo}
+              className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer ${
+                canRedo ? 'text-stone-700 hover:bg-emerald-50 hover:text-emerald-800' : 'text-stone-300 cursor-not-allowed'
+              }`}
+              title="Redo (ری ڈو)"
+            >
+              <Redo2 size={14} />
+            </button>
+          </div>
+        )}
+
+        {/* Selection Status Badge with Enhanced Style Summary */}
         {isSelectionActive && (
           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-md shrink-0">
             <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
             <span className="text-xs font-semibold text-emerald-900 font-sans">
-              {selectionCount} حرف مُنتَخَب
+              {selectionCount} حرف • {currentStyle.fontSize}px • {currentStyle.fontFamily.split(' ')[0]}
             </span>
           </div>
         )}
 
-        {/* Font Family Selector Chips */}
-        <div className="flex items-center bg-stone-100 border border-stone-200 rounded-lg p-0.5 shrink-0 gap-0.5">
-          {fonts.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => onUpdateStyle({ fontFamily: f.id })}
-              className={`px-2 py-1 rounded-md text-xs font-nastaliq transition-colors cursor-pointer ${
-                currentStyle.fontFamily === f.id
-                  ? 'bg-emerald-600 text-white font-bold shadow-xs'
-                  : 'text-stone-700 hover:bg-stone-200'
-              }`}
-            >
-              {f.nameKashmiri}
-            </button>
-          ))}
+        {/* Font Family Dropdown Button */}
+        <div className="relative shrink-0">
+          <button
+            id="toolbar-font-btn"
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setOpenPicker(openPicker === 'font' ? 'none' : 'font')}
+            className={`h-8 px-2 rounded-lg flex items-center gap-1 text-xs border transition-colors cursor-pointer ${
+              openPicker === 'font'
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                : 'bg-white text-stone-800 border-stone-200 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200'
+            }`}
+            title="Font Family (فونٹ)"
+          >
+            <span className="w-5 h-5 rounded flex items-center justify-center bg-stone-100 text-stone-800 font-serif font-bold text-xs border border-stone-300 shadow-2xs">F</span>
+            <ChevronDown size={12} />
+          </button>
         </div>
 
         {/* Font Size (+ / -) */}
@@ -104,7 +155,6 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onUpdateStyle({ fontSize: Math.max(8, currentStyle.fontSize - 2) })}
             className="w-7 h-7 flex items-center justify-center text-xs font-bold text-stone-700 hover:bg-emerald-50 hover:text-emerald-800 rounded-md transition-colors cursor-pointer"
-            title="حجم کم"
           >
             A-
           </button>
@@ -117,7 +167,6 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onUpdateStyle({ fontSize: Math.min(100, currentStyle.fontSize + 2) })}
             className="w-7 h-7 flex items-center justify-center text-xs font-bold text-stone-700 hover:bg-emerald-50 hover:text-emerald-800 rounded-md transition-colors cursor-pointer"
-            title="حجم زیٛادٕ"
           >
             A+
           </button>
@@ -135,7 +184,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
                 ? 'bg-emerald-600 text-white font-bold shadow-xs'
                 : 'text-stone-700 hover:bg-emerald-50 hover:text-emerald-800'
             }`}
-            title="Bold (موټ)"
+            title="Bold"
           >
             <Bold size={14} />
           </button>
@@ -150,7 +199,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
                 ? 'bg-emerald-600 text-white font-bold shadow-xs'
                 : 'text-stone-700 hover:bg-emerald-50 hover:text-emerald-800'
             }`}
-            title="Italic (تیٛرٛ)"
+            title="Italic"
           >
             <Italic size={14} />
           </button>
@@ -165,58 +214,53 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
                 ? 'bg-emerald-600 text-white font-bold shadow-xs'
                 : 'text-stone-700 hover:bg-emerald-50 hover:text-emerald-800'
             }`}
-            title="Underline (لَکَر)"
+            title="Underline"
           >
             <Underline size={14} />
           </button>
         </div>
 
-        {/* Text Color Quick Swatches */}
-        <div className="flex items-center gap-1 bg-white border border-stone-200 rounded-lg px-2 py-1 shrink-0">
-          <Palette size={13} className="text-stone-600" />
-          {quickColors.map((col, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => onUpdateStyle({ color: col })}
-              className={`w-5 h-5 rounded-full border transition-transform cursor-pointer ${
-                currentStyle.color === col ? 'scale-110 ring-2 ring-emerald-600 border-white' : 'border-stone-300'
-              }`}
-              style={{ backgroundColor: col }}
-              title={`رنگ: ${col}`}
-            />
-          ))}
-          <input
-            type="color"
-            value={currentStyle.color.startsWith('#') ? currentStyle.color : '#1c1917'}
-            onChange={(e) => onUpdateStyle({ color: e.target.value })}
-            className="w-5 h-5 rounded-full cursor-pointer border border-stone-300 bg-transparent shrink-0"
-            title="حَسْبِ زَرورَت رنگ (Custom Color)"
+        {/* Text Color Picker Trigger */}
+        <button
+          id="toolbar-color-btn"
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => setOpenPicker(openPicker === 'color' ? 'none' : 'color')}
+          className={`h-8 px-2.5 rounded-lg flex items-center gap-1.5 text-xs border transition-colors shrink-0 cursor-pointer ${
+            openPicker === 'color'
+              ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+              : 'bg-white text-stone-800 border-stone-200 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200'
+          }`}
+          title="Text Color"
+        >
+          <Palette size={14} />
+          <span
+            className="w-3.5 h-3.5 rounded-full border border-stone-300"
+            style={{ backgroundColor: currentStyle.color }}
           />
-        </div>
+        </button>
 
-        {/* Highlight Color Quick Swatches */}
-        <div className="flex items-center gap-1 bg-white border border-stone-200 rounded-lg px-2 py-1 shrink-0">
-          <Highlighter size={13} className="text-stone-600" />
-          {quickHighlights.map((hl, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => onUpdateStyle({ highlightColor: hl === 'transparent' ? undefined : hl })}
-              className={`w-5 h-5 rounded-full border transition-transform flex items-center justify-center cursor-pointer ${
-                currentStyle.highlightColor === hl ? 'scale-110 ring-2 ring-emerald-600 border-white' : 'border-stone-300'
-              }`}
-              style={{ backgroundColor: hl === 'transparent' ? '#ffffff' : hl }}
-              title="Highlight"
-            >
-              {hl === 'transparent' && <span className="text-[9px] text-stone-500 font-bold">X</span>}
-            </button>
-          ))}
-        </div>
+        {/* Highlight Color Picker Trigger */}
+        <button
+          id="toolbar-highlight-btn"
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => setOpenPicker(openPicker === 'highlight' ? 'none' : 'highlight')}
+          className={`h-8 px-2.5 rounded-lg flex items-center gap-1.5 text-xs border transition-colors shrink-0 cursor-pointer ${
+            openPicker === 'highlight'
+              ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+              : 'bg-white text-stone-800 border-stone-200 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200'
+          }`}
+          title="Highlight Background Color"
+        >
+          <Highlighter size={14} />
+          <span
+            className="w-3.5 h-3.5 rounded-full border border-stone-300"
+            style={{ backgroundColor: currentStyle.highlightColor || 'transparent' }}
+          />
+        </button>
 
-        {/* Alignment Controls */}
+        {/* Alignment Controls (Right, Center, Left, Justify, Top, Bottom) */}
         <div className="flex items-center gap-0.5 bg-white border border-stone-200 rounded-lg p-0.5 shrink-0">
           <button
             id="align-right-btn"
@@ -224,9 +268,11 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onUpdateStyle({ align: 'right' })}
             className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer ${
-              currentStyle.align === 'right' ? 'bg-emerald-600 text-white' : 'text-stone-700 hover:bg-emerald-50 hover:text-emerald-800'
+              currentStyle.align === 'right'
+                ? 'bg-emerald-600 text-white'
+                : 'text-stone-700 hover:bg-emerald-50 hover:text-emerald-800'
             }`}
-            title="Right Align"
+            title="Right Align (سیدھ)"
           >
             <AlignRight size={14} />
           </button>
@@ -236,9 +282,11 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onUpdateStyle({ align: 'center' })}
             className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer ${
-              currentStyle.align === 'center' ? 'bg-emerald-600 text-white' : 'text-stone-700 hover:bg-emerald-50 hover:text-emerald-800'
+              currentStyle.align === 'center'
+                ? 'bg-emerald-600 text-white'
+                : 'text-stone-700 hover:bg-emerald-50 hover:text-emerald-800'
             }`}
-            title="Center Align"
+            title="Center Align (مرکز)"
           >
             <AlignCenter size={14} />
           </button>
@@ -248,9 +296,11 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onUpdateStyle({ align: 'left' })}
             className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer ${
-              currentStyle.align === 'left' ? 'bg-emerald-600 text-white' : 'text-stone-700 hover:bg-emerald-50 hover:text-emerald-800'
+              currentStyle.align === 'left'
+                ? 'bg-emerald-600 text-white'
+                : 'text-stone-700 hover:bg-emerald-50 hover:text-emerald-800'
             }`}
-            title="Left Align"
+            title="Left Align (کشادہ)"
           >
             <AlignLeft size={14} />
           </button>
@@ -260,9 +310,11 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onUpdateStyle({ align: 'justify' })}
             className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer ${
-              currentStyle.align === 'justify' ? 'bg-emerald-600 text-white' : 'text-stone-700 hover:bg-emerald-50 hover:text-emerald-800'
+              currentStyle.align === 'justify'
+                ? 'bg-emerald-600 text-white'
+                : 'text-stone-700 hover:bg-emerald-50 hover:text-emerald-800'
             }`}
-            title="Justify"
+            title="Justify Align (برابر)"
           >
             <AlignJustify size={14} />
           </button>
@@ -272,9 +324,11 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onUpdateStyle({ verticalAlign: 'top' })}
             className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer ${
-              currentStyle.verticalAlign === 'top' ? 'bg-emerald-600 text-white' : 'text-stone-700 hover:bg-emerald-50 hover:text-emerald-800'
+              currentStyle.verticalAlign === 'top'
+                ? 'bg-emerald-600 text-white'
+                : 'text-stone-700 hover:bg-emerald-50 hover:text-emerald-800'
             }`}
-            title="Top Align"
+            title="Top Align (بیٹھک بالایٔی)"
           >
             <ArrowUpToLine size={14} />
           </button>
@@ -284,43 +338,49 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onUpdateStyle({ verticalAlign: 'bottom' })}
             className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer ${
-              currentStyle.verticalAlign === 'bottom' ? 'bg-emerald-600 text-white' : 'text-stone-700 hover:bg-emerald-50 hover:text-emerald-800'
+              currentStyle.verticalAlign === 'bottom'
+                ? 'bg-emerald-600 text-white'
+                : 'text-stone-700 hover:bg-emerald-50 hover:text-emerald-800'
             }`}
-            title="Bottom Align"
+            title="Bottom Align (بیٹھک ترٛیٚی)"
           >
             <ArrowDownToLine size={14} />
           </button>
         </div>
 
-        {/* Spacing Sliders Inline */}
-        <div className="flex items-center gap-2 bg-stone-50 border border-stone-200 rounded-lg px-2.5 py-1 shrink-0 text-xs">
-          <span className="font-nastaliq text-stone-700">لٲن فاصِلہ:</span>
-          <input
-            type="range"
-            min="0.8"
-            max="3.0"
-            step="0.1"
-            value={currentStyle.lineHeight}
-            onChange={(e) => onUpdateStyle({ lineHeight: parseFloat(e.target.value) })}
-            className="accent-emerald-600 w-16 h-1.5 bg-stone-200 rounded-lg cursor-pointer"
-            title="Line Spacing"
-          />
-        </div>
 
-        {/* Line Break Button */}
+
+        {/* Line Break (New Line) Quick Action */}
         {onInsertLineBreak && (
           <button
             id="toolbar-linebreak-btn"
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={onInsertLineBreak}
-            className="h-8 px-2.5 rounded-lg flex items-center gap-1 text-xs text-stone-800 bg-white hover:bg-emerald-50 hover:text-emerald-800 border border-stone-200 transition-colors shrink-0 font-nastaliq cursor-pointer"
-            title="Line Break"
+            className="h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1 text-xs text-stone-800 bg-white hover:bg-emerald-50 hover:text-emerald-800 border border-stone-200 hover:border-emerald-200 transition-colors shrink-0 font-nastaliq cursor-pointer"
+            title="Line Break (نٔو لٲن / Enter)"
           >
-            <WrapText size={13} />
-            <span>نٔو لٲن</span>
+            <WrapText size={13} className="shrink-0" />
+            <span className="hidden sm:inline">نٔو لٲن</span>
           </button>
         )}
+
+        {/* Spacing & FX Popover Trigger */}
+        <button
+          id="toolbar-fx-btn"
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => setOpenPicker(openPicker === 'fx' ? 'none' : 'fx')}
+          className={`h-8 px-2.5 rounded-lg flex items-center gap-1 text-xs border transition-colors shrink-0 cursor-pointer ${
+            openPicker === 'fx'
+              ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+              : 'bg-white text-stone-800 border-stone-200 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200'
+          }`}
+          title="Line Height, Letter Spacing & Shadows"
+        >
+          <Sliders size={14} />
+          <span className="font-nastaliq">اثرات</span>
+        </button>
 
         {/* Clear Formatting Button */}
         <button
@@ -328,13 +388,227 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={onClearFormatting}
-          className="h-8 px-2.5 rounded-lg flex items-center gap-1 text-xs text-stone-800 bg-white hover:bg-rose-50 hover:text-rose-700 border border-stone-200 transition-colors shrink-0 font-nastaliq cursor-pointer"
+          className="h-8 px-2.5 rounded-lg flex items-center gap-1 text-xs text-stone-800 bg-white hover:bg-rose-50 hover:text-rose-700 border border-stone-200 hover:border-rose-200 transition-colors shrink-0 font-nastaliq cursor-pointer"
           title="Clear Formatting"
         >
           <RotateCcw size={12} />
           <span>صاف</span>
         </button>
       </div>
+
+
+
+      {/* Sub-panels for Font, Color, FX */}
+      {openPicker === 'font' && (
+        <div className="pt-1.5 pb-1 border-t border-stone-200 flex flex-wrap gap-1.5 animate-in slide-in-from-top-2" dir="rtl">
+          {fonts.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                onUpdateStyle({ fontFamily: f.id });
+                setOpenPicker('none');
+              }}
+              className={`px-2.5 py-1 rounded-md text-xs flex items-center gap-1.5 border transition-colors cursor-pointer ${
+                currentStyle.fontFamily === f.id
+                  ? 'bg-emerald-600 text-white border-emerald-600 font-bold shadow-xs'
+                  : 'bg-white border-stone-200 text-stone-900 hover:bg-emerald-50 hover:border-emerald-200'
+              }`}
+            >
+              <span className="font-nastaliq">{f.nameKashmiri}</span>
+              {currentStyle.fontFamily === f.id && <Check size={12} className="text-white shrink-0" />}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {openPicker === 'color' && (
+        <div className="pt-2 pb-1 border-t border-stone-200 flex items-center gap-2 overflow-x-auto no-scrollbar animate-in slide-in-from-top-2">
+          <span className="text-xs font-nastaliq text-stone-900 shrink-0">رنگ لَفظ:</span>
+          {quickColors.map((col, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                onUpdateStyle({ color: col });
+                setOpenPicker('none');
+              }}
+              className="w-7 h-7 rounded-full border border-stone-300 flex items-center justify-center shrink-0 active:scale-90 transition-transform cursor-pointer"
+              style={{ backgroundColor: col }}
+            >
+              {currentStyle.color === col && (
+                <Check size={14} className={col === '#fafaf9' || col === '#f59e0b' ? 'text-stone-900' : 'text-white'} />
+              )}
+            </button>
+          ))}
+          {/* Native Color Input */}
+          <input
+            type="color"
+            value={currentStyle.color.startsWith('#') ? currentStyle.color : '#1c1917'}
+            onChange={(e) => onUpdateStyle({ color: e.target.value })}
+            className="w-7 h-7 rounded-full cursor-pointer border border-stone-300 shrink-0"
+            title="Custom Color"
+          />
+        </div>
+      )}
+
+      {openPicker === 'highlight' && (
+        <div className="pt-2 pb-1 border-t border-stone-200 flex items-center gap-2 overflow-x-auto no-scrollbar animate-in slide-in-from-top-2">
+          <span className="text-xs font-nastaliq text-stone-900 shrink-0">ہائِلائٹ رنگ:</span>
+          {quickHighlights.map((hl, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                onUpdateStyle({ highlightColor: hl === 'transparent' ? undefined : hl });
+                setOpenPicker('none');
+              }}
+              className="w-7 h-7 rounded-full border border-stone-300 flex items-center justify-center shrink-0 active:scale-90 transition-transform cursor-pointer"
+              style={{ backgroundColor: hl === 'transparent' ? '#ffffff' : hl }}
+            >
+              {hl === 'transparent' ? (
+                <span className="text-[10px] text-stone-700 font-bold">X</span>
+              ) : currentStyle.highlightColor === hl ? (
+                <Check size={14} className="text-stone-900" />
+              ) : null}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {openPicker === 'fx' && (
+        <div className="pt-2 pb-2 border-t border-stone-200 grid grid-cols-1 sm:grid-cols-3 gap-3 animate-in slide-in-from-top-2 text-right" dir="rtl">
+          {/* Line Spacing Presets & Slider */}
+          <div className="flex flex-col gap-1.5 bg-stone-50 p-2 rounded-lg border border-stone-200">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold font-nastaliq text-stone-900">لٲنَن مَنٛز فاصِلہ (Line Height)</span>
+              <span className="text-xs font-mono font-bold text-emerald-700">{currentStyle.lineHeight.toFixed(1)}x</span>
+            </div>
+            <div className="flex items-center gap-1">
+              {[1.5, 2.0, 2.5, 3.0].map((lh) => (
+                <button
+                  key={lh}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => onUpdateStyle({ lineHeight: lh })}
+                  className={`flex-1 h-6 text-[11px] rounded font-mono border transition-colors cursor-pointer ${
+                    Math.abs(currentStyle.lineHeight - lh) < 0.05
+                      ? 'bg-emerald-600 text-white border-emerald-600 font-bold'
+                      : 'bg-white text-stone-700 border-stone-200 hover:bg-emerald-50'
+                  }`}
+                >
+                  {lh}x
+                </button>
+              ))}
+            </div>
+            <input
+              type="range"
+              min="1.0"
+              max="3.5"
+              step="0.1"
+              value={currentStyle.lineHeight}
+              onChange={(e) => onUpdateStyle({ lineHeight: parseFloat(e.target.value) })}
+              className="accent-emerald-600 h-1.5 bg-stone-200 rounded-lg cursor-pointer mt-1"
+            />
+          </div>
+
+          {/* Letter Spacing & Opacity */}
+          <div className="flex flex-col gap-2 bg-stone-50 p-2 rounded-lg border border-stone-200">
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold font-nastaliq text-stone-900">حُروفَن مَنٛز فاصِلہ (Letter Spacing)</span>
+                <span className="text-xs font-mono font-bold text-emerald-700">{currentStyle.letterSpacing}px</span>
+              </div>
+              <input
+                type="range"
+                min="-2"
+                max="8"
+                step="0.5"
+                value={currentStyle.letterSpacing}
+                onChange={(e) => onUpdateStyle({ letterSpacing: parseFloat(e.target.value) })}
+                className="accent-emerald-600 h-1.5 bg-stone-200 rounded-lg cursor-pointer"
+              />
+            </div>
+            <div className="flex flex-col gap-1 mt-0.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold font-nastaliq text-stone-900">شفافیت (Opacity)</span>
+                <span className="text-xs font-mono font-bold text-emerald-700">{Math.round(currentStyle.opacity * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min="0.2"
+                max="1"
+                step="0.05"
+                value={currentStyle.opacity}
+                onChange={(e) => onUpdateStyle({ opacity: parseFloat(e.target.value) })}
+                className="accent-emerald-600 h-1.5 bg-stone-200 rounded-lg cursor-pointer"
+              />
+            </div>
+          </div>
+
+          {/* Text Shadow & Outline Effects */}
+          <div className="flex flex-col gap-2 bg-stone-50 p-2 rounded-lg border border-stone-200">
+            <span className="text-xs font-semibold font-nastaliq text-stone-900">سایہٕ تہٕ خٔط (Shadow & Outline)</span>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() =>
+                  onUpdateStyle({
+                    shadowColor: 'rgba(0,0,0,0.4)',
+                    shadowBlur: 4,
+                    shadowOffsetX: 0,
+                    shadowOffsetY: 2,
+                  })
+                }
+                className={`h-7 px-2 text-xs rounded border font-nastaliq transition-colors cursor-pointer ${
+                  !!currentStyle.shadowColor
+                    ? 'bg-emerald-600 text-white border-emerald-600 font-bold'
+                    : 'bg-white text-stone-800 border-stone-200 hover:bg-emerald-50'
+                }`}
+              >
+                سایہ دار (Shadow)
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() =>
+                  onUpdateStyle({
+                    shadowColor: undefined,
+                    shadowBlur: 0,
+                    shadowOffsetX: 0,
+                    shadowOffsetY: 0,
+                  })
+                }
+                className="h-7 px-2 text-xs rounded border bg-white text-stone-800 border-stone-200 hover:bg-stone-100 font-nastaliq cursor-pointer"
+              >
+                بغیر سایہ (None)
+              </button>
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[11px] font-nastaliq text-stone-700 shrink-0">خٔط (Outline):</span>
+              <input
+                type="color"
+                value={currentStyle.strokeColor || '#000000'}
+                onChange={(e) => onUpdateStyle({ strokeColor: e.target.value, strokeWidth: 1 })}
+                className="w-6 h-6 rounded border border-stone-300 cursor-pointer shrink-0"
+                title="Outline Color"
+              />
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => onUpdateStyle({ strokeColor: undefined, strokeWidth: undefined })}
+                className="text-[10px] text-rose-700 hover:underline font-nastaliq cursor-pointer"
+              >
+                حذِف خٔط (Remove Outline)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

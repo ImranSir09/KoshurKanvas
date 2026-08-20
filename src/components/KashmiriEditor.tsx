@@ -86,6 +86,7 @@ export const KashmiriEditor: React.FC<KashmiriEditorProps> = ({
     { content: doc.content, spans: doc.spans || [] },
   ]);
   const historyIndexRef = useRef<number>(0);
+  const [, setHistoryVersion] = useState<number>(0);
 
   // Search & Replace State
   const [showSearch, setShowSearch] = useState<boolean>(false);
@@ -153,6 +154,7 @@ export const KashmiriEditor: React.FC<KashmiriEditorProps> = ({
     if (currentHist.length > 50) currentHist.shift();
     historyRef.current = currentHist;
     historyIndexRef.current = currentHist.length - 1;
+    setHistoryVersion((v) => v + 1);
   }, []);
 
   const handleUndo = useCallback(() => {
@@ -163,6 +165,7 @@ export const KashmiriEditor: React.FC<KashmiriEditorProps> = ({
         content: state.content,
         spans: state.spans,
       });
+      setHistoryVersion((v) => v + 1);
     }
   }, [onUpdateDocument]);
 
@@ -174,6 +177,7 @@ export const KashmiriEditor: React.FC<KashmiriEditorProps> = ({
         content: state.content,
         spans: state.spans,
       });
+      setHistoryVersion((v) => v + 1);
     }
   }, [onUpdateDocument]);
 
@@ -343,9 +347,30 @@ export const KashmiriEditor: React.FC<KashmiriEditorProps> = ({
     });
   };
 
+  const playKeyClickSound = useCallback(() => {
+    if (!soundEnabled) return;
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(220, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.03);
+      gain.gain.setValueAtTime(0.06, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.03);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.03);
+    } catch (e) {
+      // AudioContext restricted
+    }
+  }, [soundEnabled]);
+
   // Insert Text from Kashmiri Virtual Keyboard or Voice
   const handleInsertText = useCallback(
     (textToInsert: string) => {
+      playKeyClickSound();
       const activeStart = textareaRef.current ? textareaRef.current.selectionStart : cursorPos;
       const activeEnd = textareaRef.current ? textareaRef.current.selectionEnd : cursorPos;
       const isReplacingSelection = activeStart !== activeEnd;
@@ -1012,12 +1037,27 @@ export const KashmiriEditor: React.FC<KashmiriEditorProps> = ({
 
       {/* Unified Office-style Paragraph & Text Formatting Toolbar Bar */}
       {showFormattingToolbar && (
-        <div className="w-full bg-white border-b border-stone-200 px-3 py-2 flex items-center gap-3 overflow-x-auto custom-scrollbar shrink-0 z-10 animate-in slide-in-from-top-2 shadow-xs" dir="rtl">
+        <div className="w-full bg-white border-b border-stone-200 px-3 py-2 flex items-center gap-3 overflow-x-auto overflow-y-hidden whitespace-nowrap scroll-smooth [-webkit-overflow-scrolling:touch] custom-scrollbar shrink-0 z-10 animate-in slide-in-from-top-2 shadow-xs" dir="rtl">
           <ParagraphToolbar
             currentFormat={getCurrentParagraphFormat()}
             onApplyFormat={handleApplyParagraphFormat}
+            onApplyPreset={(preset) => {
+              if (preset === 'title') {
+                handleApplyParagraphFormat({ type: 'normal' });
+                handleUpdateStyle({ fontSize: 26, bold: true });
+              } else if (preset === 'heading') {
+                handleApplyParagraphFormat({ type: 'normal' });
+                handleUpdateStyle({ fontSize: 20, bold: true });
+              } else if (preset === 'subheading') {
+                handleApplyParagraphFormat({ type: 'normal' });
+                handleUpdateStyle({ fontSize: 15, bold: true });
+              } else if (preset === 'body') {
+                handleApplyParagraphFormat({ type: 'normal' });
+                handleUpdateStyle({ fontSize: 12, bold: false });
+              }
+            }}
           />
-          <div className="w-px h-6 bg-stone-200 shrink-0 mx-1" />
+          <div className="w-px h-6 bg-stone-200 shrink-0 mx-1 inline-block" />
           <EditorToolbar
             currentStyle={activeFormatting}
             onUpdateStyle={handleUpdateStyle}
@@ -1025,9 +1065,47 @@ export const KashmiriEditor: React.FC<KashmiriEditorProps> = ({
             onInsertLineBreak={handleEnter}
             selectionCount={selection.end - selection.start}
             isSelectionActive={selection.start !== selection.end}
+            onUndo={() => {
+              handleUndo();
+            }}
+            onRedo={() => {
+              handleRedo();
+            }}
+            canUndo={historyIndexRef.current > 0}
+            canRedo={historyIndexRef.current < historyRef.current.length - 1}
           />
         </div>
       )}
+
+      {/* Quick Poetry & Literary Symbols Bar */}
+      <div className="w-full bg-stone-50 border-b border-stone-200 px-3 py-1.5 flex items-center gap-2 overflow-x-auto overflow-y-hidden whitespace-nowrap scroll-smooth [-webkit-overflow-scrolling:touch] custom-scrollbar shrink-0 z-10" dir="rtl">
+        <span className="text-[11px] font-nastaliq text-stone-500 shrink-0">شعری علامتہٕ:</span>
+        {[
+          { char: '؂', label: 'تخلص (Takhallus)' },
+          { char: 'ﷺ', label: 'دُرود شریف' },
+          { char: '؏', label: 'عین (Verse sign)' },
+          { char: '۔', label: 'فُل سٹاپ' },
+          { char: '٭', label: 'ستارہ (Asterisk)' },
+          { char: '؍', label: 'تاریخ نشان' },
+          { char: '«', label: 'بائیں کوٹ' },
+          { char: '»', label: 'دائیں کوٹ' },
+          { char: '؟', label: 'سوالیہ' },
+          { char: 'ٲ', label: 'ٲ' },
+          { char: 'ۄ', label: 'ۄ' },
+          { char: 'ؠ', label: 'ؠ' },
+        ].map((item, idx) => (
+          <button
+            key={idx}
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleInsertText(item.char)}
+            className="h-7 px-2.5 rounded bg-white border border-stone-200 text-stone-800 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-900 transition-colors text-xs font-nastaliq cursor-pointer shrink-0 shadow-2xs"
+            title={item.label}
+          >
+            {item.char}
+          </button>
+        ))}
+      </div>
 
       {/* Main Focused Text Writing & Reading Area */}
       <div
@@ -1100,136 +1178,26 @@ export const KashmiriEditor: React.FC<KashmiriEditorProps> = ({
             />
           ) : null}
 
-          {/* Real-time Rendered Formatted Slices (WYSIWYG View layered seamlessly) */}
+          {/* Direct Native Fluid Kashmiri Writing Surface (100% native typing fluidity like the document title input) */}
           <div className={`relative z-10 w-full h-full flex flex-col p-5 sm:p-8 md:p-10 box-border overflow-y-auto overflow-x-hidden ${
             doc.defaultStyle.verticalAlign === 'center'
               ? 'justify-center'
               : doc.defaultStyle.verticalAlign === 'bottom'
               ? 'justify-end'
               : 'justify-start'
-          }`}>
-            <div
-              ref={livePreviewRef}
-              id="kashmiri-rendered-text-preview"
-              className="w-full select-text font-nastaliq text-stone-900 transition-all duration-75 whitespace-pre-wrap break-words"
-              dir="rtl"
-              onPointerDown={handleCanvasPointerDown}
-              style={{
-                fontSize: `${doc.defaultStyle.fontSize}px`,
-                lineHeight: doc.defaultStyle.lineHeight,
-                letterSpacing: `${doc.defaultStyle.letterSpacing}px`,
-                textAlign: doc.defaultStyle.align,
-              }}
-            >
-              {paragraphsData.map((para) => {
-                const fmt = para.format;
-                const paraSlices = getSlicesForParagraph(renderedSlices, para.start, para.end);
-                const dir = fmt.direction || doc.defaultStyle.direction || 'rtl';
-                const indentLevel = fmt.indent || 0;
-                const indentStyle = dir === 'rtl' ? { paddingRight: `${indentLevel * 24}px` } : { paddingLeft: `${indentLevel * 24}px` };
-
-                return (
-                  <div
-                    key={`para-${para.index}`}
-                    className={`relative flex items-start gap-2 my-1 ${
-                      fmt.type === 'quote'
-                        ? 'border-r-4 border-emerald-600 bg-emerald-50/40 px-3 py-2 rounded-l-md'
-                        : ''
-                    }`}
-                    style={{
-                      direction: dir,
-                      textAlign: doc.defaultStyle.align || (dir === 'ltr' ? 'left' : 'right'),
-                      ...indentStyle,
-                    }}
-                  >
-                    {fmt.type === 'bullet' && (
-                      <span className="select-none text-emerald-600 font-bold shrink-0 px-1">•</span>
-                    )}
-                    {fmt.type === 'numbered' && (
-                      <span className="select-none text-emerald-600 font-bold shrink-0 text-xs sm:text-sm font-sans">
-                        {numberedListIndices[para.index] || 1}.
-                      </span>
-                    )}
-                    {fmt.type === 'checklist' && (
-                      <input
-                        type="checkbox"
-                        checked={!!fmt.checked}
-                        onChange={(e) => handleToggleChecklist(para.index, e.target.checked)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="mt-1 w-4 h-4 text-emerald-600 border-stone-300 rounded-xs focus:ring-emerald-500 cursor-pointer shrink-0 pointer-events-auto"
-                      />
-                    )}
-                    {fmt.type === 'quote' && (
-                      <span className="select-none text-emerald-600/70 font-serif text-lg shrink-0 leading-none">“</span>
-                    )}
-
-                    <div className="flex-1 whitespace-pre-wrap break-words">
-                      {paraSlices.length > 0 ? (
-                        paraSlices.map((slice, sIdx) => {
-                          const isSel = !!slice.isSelected;
-                          const fontFam = getFontFamilyCSS(slice.style.fontFamily);
-
-                          return (
-                            <span
-                              key={`slice-${slice.start}-${slice.end}-${sIdx}`}
-                              data-slice-start={slice.start}
-                              className={`transition-all duration-75 inline whitespace-pre-wrap break-words ${
-                                isSel ? 'bg-blue-600 text-white rounded-xs shadow-sm ring-1 ring-blue-400/60' : ''
-                              }`}
-                              style={{
-                                fontFamily: fontFam,
-                                fontSize: `${slice.style.fontSize}px`,
-                                fontWeight: slice.style.bold ? 'bold' : 'normal',
-                                fontStyle: slice.style.italic ? 'italic' : 'normal',
-                                textDecoration: slice.style.underline ? 'underline' : 'none',
-                                color: isSel ? '#ffffff' : slice.style.color,
-                                backgroundColor: isSel ? '#2563eb' : slice.style.highlightColor || 'transparent',
-                                letterSpacing: `${slice.style.letterSpacing}px`,
-                                textShadow: isSel
-                                  ? 'none'
-                                  : slice.style.shadowColor
-                                  ? `${slice.style.shadowOffsetX || 0}px ${slice.style.shadowOffsetY || 2}px ${slice.style.shadowBlur || 4}px ${slice.style.shadowColor}`
-                                  : 'none',
-                                opacity: isSel ? 1 : slice.style.opacity,
-                                padding: isSel ? '0 2px' : '0',
-                                margin: isSel ? '0 -1px' : '0',
-                              }}
-                            >
-                              {slice.hasCaretAtStart && (
-                                <span className="inline-block w-0.5 bg-blue-600 animate-pulse h-[1.2em] align-middle -mx-px z-20" />
-                              )}
-                              {slice.text}
-                              {slice.hasCaretAtEnd && (
-                                <span className="inline-block w-0.5 bg-blue-600 animate-pulse h-[1.2em] align-middle -mx-px z-20" />
-                              )}
-                            </span>
-                          );
-                        })
-                      ) : (
-                        <span className="opacity-0">.</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {doc.content.length === 0 && (
-                <span className="flex items-center gap-1.5 text-stone-400 font-nastaliq text-xl">
-                  <span className="inline-block w-0.5 bg-blue-600 animate-pulse h-[1.2em] align-middle" />
-                  <span>کٲشُر ہیٚچھِو تہٕ لؠکھِو</span>
-                </span>
-              )}
-            </div>
-
-            {/* Native Text Input and Selection Overlay with inputMode control */}
+          }`}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsFocusedWritingMode(true);
+            textareaRef.current?.focus();
+          }}
+          >
             <textarea
               ref={textareaRef}
               id="kashmiri-native-textarea"
               value={doc.content}
               inputMode={keyboardMode === 'phone' ? 'text' : 'none'}
-              onClick={() => {
-                updateSelectionFromDOM();
-              }}
+              onClick={updateSelectionFromDOM}
               onChange={(e) => {
                 const newContent = e.target.value;
                 const deltaLength = newContent.length - doc.content.length;
@@ -1247,36 +1215,31 @@ export const KashmiriEditor: React.FC<KashmiriEditorProps> = ({
               onKeyUp={updateSelectionFromDOM}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && keyboardMode === 'virtual') {
-                  // Handle Enter on physical keyboard when in virtual mode
                   e.preventDefault();
                   handleEnter();
                   return;
                 }
                 updateSelectionFromDOM();
               }}
-              onPointerDown={() => {
-                updateSelectionFromDOM();
-              }}
+              onPointerDown={updateSelectionFromDOM}
               onPointerUp={updateSelectionFromDOM}
               onMouseDown={updateSelectionFromDOM}
               onMouseUp={updateSelectionFromDOM}
-              onTouchStart={() => {
-                updateSelectionFromDOM();
-              }}
+              onTouchStart={updateSelectionFromDOM}
               onTouchEnd={updateSelectionFromDOM}
-              onFocus={() => {
-                updateSelectionFromDOM();
-              }}
+              onFocus={updateSelectionFromDOM}
               dir="rtl"
-              rows={8}
-              className="absolute inset-0 w-full h-full opacity-0 text-transparent caret-emerald-600 bg-transparent resize-none border-none outline-hidden p-5 sm:p-8 md:p-10 font-nastaliq cursor-text selection:bg-emerald-600 selection:text-white whitespace-pre-wrap break-words"
+              rows={12}
+              placeholder="ٲسۍ ہٚچھِو تہٕ کٲشُر لؠکھِو..."
+              className="w-full h-full min-h-[380px] bg-transparent resize-none border-none outline-hidden font-nastaliq cursor-text selection:bg-emerald-600 selection:text-white whitespace-pre-wrap break-words overflow-y-auto custom-scrollbar"
               style={{
+                fontFamily: getFontFamilyCSS(doc.defaultStyle.fontFamily),
                 fontSize: `${doc.defaultStyle.fontSize}px`,
                 lineHeight: doc.defaultStyle.lineHeight,
                 letterSpacing: `${doc.defaultStyle.letterSpacing}px`,
                 textAlign: doc.defaultStyle.align,
+                color: doc.defaultStyle.color || '#1c1917',
               }}
-              placeholder=""
               autoFocus
             />
           </div>
@@ -1325,6 +1288,21 @@ export const KashmiriEditor: React.FC<KashmiriEditorProps> = ({
             >
               <span className="font-sans font-medium text-xs">ENG</span>
             </button>
+          </div>
+        </div>
+
+        {/* Live Document Statistics Bar */}
+        <div className="w-full bg-stone-50 border-t border-stone-200 px-4 py-2 flex items-center justify-between text-xs text-stone-600 font-sans shrink-0 z-10 select-none">
+          <div className="flex items-center gap-3">
+            <span>الفاظ: <strong className="font-semibold text-stone-900">{doc.content.trim() ? doc.content.trim().split(/\s+/).length : 0}</strong></span>
+            <span className="text-stone-300">|</span>
+            <span>حُرُوف: <strong className="font-semibold text-stone-900">{doc.content.length}</strong></span>
+            <span className="text-stone-300">|</span>
+            <span>سطر: <strong className="font-semibold text-stone-900">{doc.content.split('\n').length}</strong></span>
+          </div>
+          <div className="flex items-center gap-1.5 text-emerald-700 font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>محفوظ (Saved)</span>
           </div>
         </div>
       </div>
